@@ -262,11 +262,38 @@ void process_peer_request(void *arg) {
 			value_start_pos = KEY_START_POS + data[KEY_LENGTH_POS];
 			switch (data[2]) {
 			case CMD_PUT:
-				if ((hash_table_put(&data[KEY_START_POS], data[KEY_LENGTH_POS],
-									&data[value_start_pos + 1], data[value_start_pos])) == NULL)
-					data[3] = CMD_ERR;
-				else
-					data[3] = CMD_OK;
+				np = hash_table_get(&data[KEY_START_POS], data[KEY_LENGTH_POS]);
+				if (np == NULL) {
+					if ((hash_table_put(&data[KEY_START_POS], data[KEY_LENGTH_POS],
+							&data[value_start_pos + 1], data[value_start_pos])) == NULL)
+						data[3] = CMD_ERR;
+					else
+						data[3] = CMD_OK;
+				} else {
+					/*
+					 * File is present with another peer. We concatenate the previous
+					 * and new peer id before registering in the hash table.
+					 */
+					char *value = NULL;
+					/*
+					 * 3 is because of one space delimiter in between and two null terminators
+					 * for each of two strings.
+					 */
+					value = (char *)malloc(strlen(np->value) + data[value_start_pos] + 3);
+					memset(value, 0, strlen(np->value) + data[value_start_pos] + 3);
+					if (value != NULL) {
+						strncat(value, np->value, strlen(np->value));
+						strncat(value, " ", 1);
+						strncat(value, &data[value_start_pos + 1], data[value_start_pos]);
+						if (hash_table_put(&data[KEY_START_POS], data[KEY_LENGTH_POS],
+								value, strlen(value)) == NULL)
+							data[3] = CMD_ERR;
+						else
+							data[3] = CMD_OK;
+					} else {
+						data[3] = CMD_ERR;
+					}
+				}
 				noBytesWritten = writen(connfd, data, MESSAGE_SIZE);
 				break;
 			case CMD_GET:
