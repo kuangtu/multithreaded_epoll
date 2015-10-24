@@ -290,6 +290,7 @@ void process_peer_request(void *arg) {
 							data[3] = CMD_ERR;
 						else
 							data[3] = CMD_OK;
+						free(value);
 					} else {
 						data[3] = CMD_ERR;
 					}
