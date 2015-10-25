@@ -64,6 +64,19 @@ struct server_conn {
 };
 static struct server_conn sconn[MAX_NO_OF_SERVERS];
 
+/*
+ * Only one member in structure but we still keep it for easier
+ * extension in future.
+ */
+typedef struct job_d {
+	int sockfd;
+} job_data;
+
+static int efd;
+static struct epoll_event event;
+static struct epoll_event *events;
+static workqueue_t workqueue;
+
 static volatile bool perf_test_on = false;
 unsigned char dir_to_be_shared[KEY_SIZE] = {0};
 
@@ -235,185 +248,281 @@ unsigned char** str_split(unsigned char* a_str, const char a_delim) {
 /*
  * Handle the request from a peer
  */
-void process_peer_request(void *arg) {
-	int fd;
+static void process_peer_request(struct job *job) {
+	job_data *job_wq_data = (job_data *)job->user_data;
+	int connfd = job_wq_data->sockfd;
+	int fd, ret;
 	int status;
-	int connfd = *((int *)arg);
-	char data[MESSAGE_SIZE];
-	char filename[KEY_SIZE];
-	char readbuffer[READ_BUFFER_SIZE];
 	int noBytesRead;
 	int noBytesWritten;
 	int value_start_pos;
 	unsigned int file_bytes_counter;
+	char data[MESSAGE_SIZE];
+	char filename[KEY_SIZE];
+	char readbuffer[READ_BUFFER_SIZE];
 	struct node_t *np;
 	struct stat statbuffer;
+	struct epoll_event event;
 
-	while (true) {
-		memset(data, 0, MESSAGE_SIZE);
-		noBytesRead = readn(connfd, data, MESSAGE_SIZE);
-		if ((noBytesRead < 0) || (noBytesRead == 0))
-			break;
-		#ifdef DEBUG
-		printf("Bytes read from peer: %d\n", noBytesRead);
-		#endif
+	memset(data, 0, MESSAGE_SIZE);
+	noBytesRead = readn(connfd, data, MESSAGE_SIZE);
+	#ifdef DEBUG
+	printf("Bytes read from peer: %d\n", noBytesRead);
+	#endif
 
-		if (data[0] == 'C' && data[1] == 'S') {
-			value_start_pos = KEY_START_POS + data[KEY_LENGTH_POS];
-			switch (data[2]) {
-			case CMD_PUT:
-				np = hash_table_get(&data[KEY_START_POS], data[KEY_LENGTH_POS]);
-				if (np == NULL) {
-					if ((hash_table_put(&data[KEY_START_POS], data[KEY_LENGTH_POS],
-							&data[value_start_pos + 1], data[value_start_pos])) == NULL)
-						data[3] = CMD_ERR;
-					else
-						data[3] = CMD_OK;
-				} else {
-					/*
-					 * File is present with another peer. We concatenate the previous
-					 * and new peer id before registering in the hash table.
-					 */
-					char *value = NULL;
-					/*
-					 * 3 is because of one space delimiter in between and two null terminators
-					 * for each of two strings.
-					 */
-					value = (char *)malloc(strlen(np->value) + data[value_start_pos] + 3);
-					memset(value, 0, strlen(np->value) + data[value_start_pos] + 3);
-					if (value != NULL) {
-						strncat(value, np->value, strlen(np->value));
-						strncat(value, " ", 1);
-						strncat(value, &data[value_start_pos + 1], data[value_start_pos]);
-						if (hash_table_put(&data[KEY_START_POS], data[KEY_LENGTH_POS],
-								value, strlen(value)) == NULL)
-							data[3] = CMD_ERR;
-						else
-							data[3] = CMD_OK;
-						free(value);
-					} else {
-						data[3] = CMD_ERR;
-					}
-				}
-				noBytesWritten = writen(connfd, data, MESSAGE_SIZE);
-				break;
-			case CMD_GET:
-				np = hash_table_get(&data[KEY_START_POS], data[KEY_LENGTH_POS]);
-				if (np == NULL) {
-					data[3] = CMD_ERR;
-				} else {
-					data[3] = CMD_OK;
-					strncpy(&data[value_start_pos + 1], np->value, strlen(np->value));
-				}
-				noBytesWritten = writen(connfd, data, MESSAGE_SIZE);
-				break;
-			case CMD_DEL:
-				if (hash_table_delete(&data[KEY_START_POS], data[KEY_LENGTH_POS]))
+	if (data[0] == 'C' && data[1] == 'S') {
+		value_start_pos = KEY_START_POS + data[KEY_LENGTH_POS];
+		switch (data[2]) {
+		case CMD_PUT:
+			np = hash_table_get(&data[KEY_START_POS], data[KEY_LENGTH_POS]);
+			if (np == NULL) {
+				if ((hash_table_put(&data[KEY_START_POS], data[KEY_LENGTH_POS],
+						&data[value_start_pos + 1], data[value_start_pos])) == NULL)
 					data[3] = CMD_ERR;
 				else
 					data[3] = CMD_OK;
-				noBytesWritten = writen(connfd, data, MESSAGE_SIZE);
-				break;
-			case CMD_PEER_REQ:
-				memset(filename, 0, KEY_SIZE);
-				strncpy(filename, dir_to_be_shared, strlen(dir_to_be_shared));
-				strncat(filename, &data[KEY_START_POS], data[KEY_LENGTH_POS]);
-				filename[strlen(filename) + 1] = '\0';
-				#ifdef DEBUG
-				printf("File %s request received from peer\n", filename);
-				#endif
-
-				memset(readbuffer, 0, READ_BUFFER_SIZE);
-
-				status = stat(filename, &statbuffer);
-				if (status != 0) {
-					perror("Could not get file info\n");
-					goto break_out;
-				}
-
-				file_bytes_counter = 0;
-				fd = open(filename, O_RDONLY);
-				if (fd == -1) {
-					perror("Server: Error opening file");
-					goto break_out;
+			} else {
+					/*
+					* File is present with another peer. We concatenate the previous
+					* and new peer id before registering in the hash table.
+					*/
+				char *value = NULL;
+					/*
+					* 3 is because of one space delimiter in between and two null terminators
+					* for each of two strings.
+					*/
+				value = (char *)malloc(strlen(np->value) + data[value_start_pos] + 3);
+				memset(value, 0, strlen(np->value) + data[value_start_pos] + 3);
+				if (value != NULL) {
+					strncat(value, np->value, strlen(np->value));
+					strncat(value, " ", 1);
+					strncat(value, &data[value_start_pos + 1], data[value_start_pos]);
+					if (hash_table_put(&data[KEY_START_POS], data[KEY_LENGTH_POS],
+							value, strlen(value)) == NULL)
+						data[3] = CMD_ERR;
+					else
+						data[3] = CMD_OK;
+					free(value);
 				} else {
-					noBytesRead = noBytesWritten = 0;
-					while ((noBytesRead = read(fd, readbuffer, READ_BUFFER_SIZE)) > 0) {
-						file_bytes_counter += noBytesRead;
-						if (file_bytes_counter == statbuffer.st_size) {
-							readbuffer[noBytesRead] = 'E';
-							readbuffer[noBytesRead + 1] = 'O';
-							readbuffer[noBytesRead + 2] = 'F';
-							noBytesWritten = write(connfd, readbuffer, noBytesRead + 3);
-							#ifdef DEBUG
-							printf("Server: Number of bytes read: %d written: %d\n", noBytesRead + 3, noBytesWritten);
-							#endif
-							if (noBytesRead + 3 != noBytesWritten)
-								perror("Server: Could not write whole buffer");
-							goto exit_while_loop;
-						}
-						noBytesWritten = write(connfd, readbuffer, noBytesRead);
-						#ifdef DEBUG
-						printf("Server: Number of bytes read: %d written: %d\n", noBytesRead, noBytesWritten);
-						#endif
-						if (noBytesRead != noBytesWritten)
-							perror("Server: Could not write whole buffer");
-						memset(readbuffer, 0, READ_BUFFER_SIZE);
-					}
+					data[3] = CMD_ERR;
 				}
-exit_while_loop:
-				if (noBytesRead == -1)
-					perror("Server: Error on reading");
-				if (close(fd) == -1)
-					perror("Server: Error on closing file");
-
-				break;
-break_out:
-				readbuffer[3] = CMD_ERR;
-				noBytesWritten = writen(connfd, readbuffer, HEADER_SIZE);
-				break;
-			default:
-				break;
 			}
+			noBytesWritten = writen(connfd, data, MESSAGE_SIZE);
+			break;
+		case CMD_GET:
+			np = hash_table_get(&data[KEY_START_POS], data[KEY_LENGTH_POS]);
+			if (np == NULL) {
+				data[3] = CMD_ERR;
+			} else {
+				data[3] = CMD_OK;
+				strncpy(&data[value_start_pos + 1], np->value, strlen(np->value));
+			}
+			noBytesWritten = writen(connfd, data, MESSAGE_SIZE);
+			break;
+		case CMD_DEL:
+			if (hash_table_delete(&data[KEY_START_POS], data[KEY_LENGTH_POS]))
+				data[3] = CMD_ERR;
+			else
+				data[3] = CMD_OK;
+			noBytesWritten = writen(connfd, data, MESSAGE_SIZE);
+			break;
+		case CMD_PEER_REQ:
+			memset(filename, 0, KEY_SIZE);
+			strncpy(filename, dir_to_be_shared, strlen(dir_to_be_shared));
+			strncat(filename, &data[KEY_START_POS], data[KEY_LENGTH_POS]);
+			filename[strlen(filename) + 1] = '\0';
 			#ifdef DEBUG
-			printf("Bytes written by server: %d\n", noBytesWritten);
+			printf("File %s request received from peer\n", filename);
 			#endif
+
+			memset(readbuffer, 0, READ_BUFFER_SIZE);
+
+			status = stat(filename, &statbuffer);
+			if (status != 0) {
+				perror("Could not get file info\n");
+				goto break_out;
+			}
+
+			file_bytes_counter = 0;
+			fd = open(filename, O_RDONLY);
+			if (fd == -1) {
+				perror("Server: Error opening file");
+				goto break_out;
+			} else {
+				noBytesRead = noBytesWritten = 0;
+				while ((noBytesRead = read(fd, readbuffer, READ_BUFFER_SIZE)) > 0) {
+					file_bytes_counter += noBytesRead;
+					if (file_bytes_counter == statbuffer.st_size) {
+						readbuffer[noBytesRead] = 'E';
+						readbuffer[noBytesRead + 1] = 'O';
+						readbuffer[noBytesRead + 2] = 'F';
+						noBytesWritten = write(connfd, readbuffer, noBytesRead + 3);
+						#ifdef DEBUG
+						printf("Server: Number of bytes read: %d written: %d\n", noBytesRead + 3, noBytesWritten);
+						#endif
+						if (noBytesRead + 3 != noBytesWritten)
+							perror("Server: Could not write whole buffer");
+						goto exit_while_loop;
+					}
+					noBytesWritten = write(connfd, readbuffer, noBytesRead);
+					#ifdef DEBUG
+					printf("Server: Number of bytes read: %d written: %d\n", noBytesRead, noBytesWritten);
+					#endif
+					if (noBytesRead != noBytesWritten)
+						perror("Server: Could not write whole buffer");
+					memset(readbuffer, 0, READ_BUFFER_SIZE);
+				}
+			}
+exit_while_loop:
+			if (noBytesRead == -1)
+				perror("Server: Error on reading");
+			if (close(fd) == -1)
+				perror("Server: Error on closing file");
+
+			break;
+break_out:
+			readbuffer[3] = CMD_ERR;
+			noBytesWritten = writen(connfd, readbuffer, HEADER_SIZE);
+			break;
+		default:
+			break;
 		}
+		#ifdef DEBUG
+		printf("Bytes written by server: %d\n", noBytesWritten);
+		#endif
 	}
 
-	pthread_exit(NULL);
+	event.data.fd = connfd;
+	event.events = EPOLLIN;
+	ret = epoll_ctl(efd, EPOLL_CTL_ADD, connfd, &event);
+	if (ret == -1)
+		perror("Error with epoll_ctl ADD");
+	free(job_wq_data);
+	free(job);
 }
 
 void *server_thread(void *arg) {
 	int listenfd = *((int *)arg);
-	int connfd, error;
 	socklen_t client_length;
 	struct sockaddr *client_address;
+	int infd, ret;
+	int n, i;
+	job_t *job;
+	job_data *job_wq_data;
 
 	client_address = malloc(addr_length);
 	if (!client_address)
 		err_sys("Error in allocating memory for client address\n");
 
+	/*
+	 * Using https://banu.com/blog/2/how-to-use-epoll-a-complete-example-in-c/
+	 * as an example with recommendations from http://csh.rit.edu/~rossdylan/presentations/EpollMT/#1.
+	 */
+	efd = epoll_create1(0);
+	if (efd == -1)
+		err_sys("Error with epoll_create1");
+
+	event.data.fd = listenfd;
+	event.events = EPOLLIN;
+	ret = epoll_ctl(efd, EPOLL_CTL_ADD, listenfd, &event);
+	if (ret == -1)
+		err_sys("Error with epoll_ctl");
+
+	/* Buffer where events are returned */
+	events = calloc(MAXEVENTS, sizeof(event));
+
+	/* The event loop */
 	for ( ; ; )	{
+
 		client_length = addr_length;
 
-		connfd = accept(listenfd, client_address, &client_length);
-		if (connfd == -1)
-			err_sys("Error with accept");
-		else
-			printf("Connection accepted\n");
+		n = epoll_wait(efd, events, MAXEVENTS, -1);
+		for (i = 0; i < n; i++) {
+			if ((events[i].events & EPOLLERR) ||
+				(events[i].events & EPOLLHUP) ||
+				(!(events[i].events & EPOLLIN))) {
+				/*
+				 * An error has occured on this fd or the socket is not ready
+				 * for reading. Why were we notified then?
+				 */
+				printf("epoll error\n");
+				close(events[i].data.fd);
+				continue;
+			} else if (listenfd == events[i].data.fd) {
+				/*
+				 * We have a notification on the listening socket, which means
+				 * one or more incoming connections.
+				 */
+				while (1) {
+					infd = accept(listenfd, client_address, &client_length);
+					if (infd == -1) {
+						if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
+							/* We processed all incoming connections */
+							break;
+						}
+						else {
+							perror("Error with accept");
+							break;
+						}
+					} else
+						printf("Connection accepted\n");
 
-		/*
-		 * We create a thread for each incoming connection. We know we
-		 * are not gonna do more than 8 nodes for this assignment and this
-		 * design serves fine for the requirement at hand. We do not
-		 * close the connection. The connection is only ever closed by
-		 * the peer on exit.
-		 */
-		error = pthread_create(&tid, NULL, &process_peer_request, (void *)&connfd);
-		if (error != 0) {
-			perror("Error in thread creation for peer");
-			close(connfd);
+					/*
+					 * Make the incoming socket non blocking and add it to
+					 * the lists of fds to monitor. In the future when the
+					 * read/write calls are made non blocking this will be
+					 * required.
+					 */
+					/*
+					if (!make_socket_nonblocking(infd)) {
+						perror("Could not make socket nonblocking");
+						abort();
+					}
+					*/
+
+					event.data.fd = infd;
+					event.events = EPOLLIN;
+					ret = epoll_ctl(efd, EPOLL_CTL_ADD, infd, &event);
+					if (ret == -1) {
+						perror("Error with epoll_ctl");
+						abort();
+					}
+				}
+				continue;
+			} else {
+
+				if ((job = malloc(sizeof(* job))) == NULL) {
+					perror("Failed to allocate memory for job object");
+					continue;
+				}
+
+				if ((job_wq_data = malloc(sizeof(* job_wq_data))) == NULL) {
+					perror("Failed to allocate memory for wq data");
+					free(job);
+					continue;
+				}
+
+				job_wq_data->sockfd = events[i].data.fd;
+				job->job_function = process_peer_request;
+				job->user_data = job_wq_data;
+
+				/*
+				 * In a multi threaded environment epoll is not suppose to monitor
+				 * descriptors on which other threads are working. Ideally use of
+				 * the EPOLLONESHOT flag should have disabled it for the next epoll_wait
+				 * till the worker thread reenables it, however for some reason it seems
+				 * not to work. So manually delete the fd from being monitored by epoll
+				 * and add it back in the process_peer_request function after it finishes
+				 * working with the said descriptor. In future use EPOLLONESHOT after
+				 * investigation and finding the fix.
+				 */
+				ret = epoll_ctl(efd, EPOLL_CTL_DEL, events[i].data.fd, &events[i]);
+				if (ret == -1)
+					perror("Error with epoll_ctl DEL");
+
+				/* Add the job for processing by workqueue */
+				workqueue_add_job(&workqueue, job);
+			}
 		}
 	}
 }
@@ -520,7 +629,7 @@ void register_with_server(void) {
 	}
 }
 
-void process_data_from_get(const unsigned char *peerid,
+void process_data_from_get(unsigned char *peerid,
 						   const unsigned char *key, const int key_length) {
 	int i, j, k, l;
 	char *readbuffer;
@@ -845,6 +954,7 @@ void input_process(void) {
 			run_perf_tests();
 			break;
 		case 4:
+			workqueue_shutdown(&workqueue);
 			exitloop = true;
 			break;
 		default:
@@ -865,8 +975,8 @@ int main(int argc, char *argv[]) {
 	ssize_t read;
 	size_t len = 0;
 	char *line = NULL;
-	char **tokens = NULL;
 	char sport[32] = {0};
+	unsigned char **tokens = NULL;
 
 	if (argc != 4) {
 		/*
@@ -918,6 +1028,13 @@ int main(int argc, char *argv[]) {
 
 	if (pthread_rwlock_init(&ht_lock, NULL) != 0) {
 		perror("Lock init failed");
+		goto free_tokens;
+	}
+
+	/* Initialize work queue */
+	if (workqueue_init(&workqueue, NUMBER_OF_WQS)) {
+		workqueue_shutdown(&workqueue);
+		perror("Failed to create workqueue");
 		goto free_tokens;
 	}
 

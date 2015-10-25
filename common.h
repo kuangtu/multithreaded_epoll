@@ -34,9 +34,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/epoll.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
+
+#include "workqueue.h"
 
 /* #define DEBUG */
 
@@ -69,6 +73,8 @@
 #define READ_BUFFER_SIZE		8192
 #define MAX_PEERS				16
 #define PEER_ID_SIZE			64
+#define MAXEVENTS				2 * MAX_NO_OF_SERVERS
+#define NUMBER_OF_WQS			3
 
 /* Commands from peers */
 #define CMD_PUT					0x01
@@ -94,6 +100,7 @@ ssize_t writen(int fd, const void *vptr, size_t n);
 ssize_t readn(int fd, void *vptr, size_t n);
 int tcp_connect(const char *host, const char *serv);
 int tcp_listen(const char *host, const char *server, socklen_t *addrlen);
+bool make_socket_nonblocking(int fd);
 void *thread_main(void *arg);
 int create_thread(int thread_index_number);
 void signal_handler(int signal);

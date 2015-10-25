@@ -115,7 +115,7 @@ int tcp_listen(const char *host, const char *server, socklen_t *addrlen)
 
 	memset(&hints, 0, sizeof (struct addrinfo));
 	hints.ai_flags = AI_PASSIVE;			/* For wildcard IP address */
-	hints.ai_family = AF_UNSPEC;			/* Allow IPv4 or IPv6 */	
+	hints.ai_family = AF_UNSPEC;			/* Allow IPv4 or IPv6 */
 	hints.ai_socktype = SOCK_STREAM;		/* Stream socket and not datagram socket */
 
 	if ((error = getaddrinfo (host, server, &hints, &res)) != 0)
@@ -149,6 +149,9 @@ int tcp_listen(const char *host, const char *server, socklen_t *addrlen)
 	else
 		backlog = LISTENQ;
 
+	if (!make_socket_nonblocking(listenfd))
+		err_sys("Socket nonblocking error");
+
 	if (listen(listenfd, backlog) < 0)
 		err_sys("Listen error");
 
@@ -160,7 +163,28 @@ int tcp_listen(const char *host, const char *server, socklen_t *addrlen)
 	return listenfd;
 }
 
+bool make_socket_nonblocking(int fd)
+{
+	int flags, s;
+
+	flags = fcntl(fd, F_GETFL, 0);
+	if (flags < 0) {
+		perror("fnctl error");
+		return false;
+	}
+
+	flags |= O_NONBLOCK;
+
+	s = fcntl(fd, F_SETFL, flags);
+	if (s == -1) {
+		perror("fnctl error");
+		return false;
+	}
+
+	return true;
+}
+
 void signal_handler(int signal)
 {
-	_exit(0);	
+	_exit(0);
 }
