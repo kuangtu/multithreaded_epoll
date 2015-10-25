@@ -74,9 +74,11 @@ int tcp_connect(const char *host, const char *serv)
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 
-	if ( (n = getaddrinfo(host, serv, &hints, &res)) != 0)
-		err_sys("tcp_connect error for %s, %s: %s",
+	if ( (n = getaddrinfo(host, serv, &hints, &res)) != 0) {
+		printf("tcp_connect error for %s, %s: %s",
 				 host, serv, gai_strerror(n));
+		return -1;
+	}
 	ressave = res;
 
 	do {
@@ -88,12 +90,16 @@ int tcp_connect(const char *host, const char *serv)
 			break;		/* Success */
 
 		error = close(sockfd);
-		if (error == -1)
-			err_sys("Close error");
+		if (error == -1) {
+			printf("Close error");
+			return -1;
+		}
 	} while ( (res = res->ai_next) != NULL);
 
-	if (res == NULL)	/* errno set from final connect() */
-		err_sys("tcp_connect error for %s, %s", host, serv);
+	if (res == NULL) {	/* errno set from final connect() */
+		printf("tcp_connect error for %s, %s", host, serv);
+		return -1;
+	}
 
 	freeaddrinfo(ressave);
 

@@ -252,7 +252,7 @@ void process_peer_request(void *arg) {
 	while (true) {
 		memset(data, 0, MESSAGE_SIZE);
 		noBytesRead = readn(connfd, data, MESSAGE_SIZE);
-		if (noBytesRead < 0)
+		if ((noBytesRead < 0) || (noBytesRead == 0))
 			break;
 		#ifdef DEBUG
 		printf("Bytes read from peer: %d\n", noBytesRead);
@@ -426,6 +426,7 @@ void put_at_server(const unsigned char *key, const int key_length,
 	char sport[32] = {0};
 	int noBytesRead;
 	int noBytesWritten;
+	bool exit;
 
 	memset(data, 0, MESSAGE_SIZE);
 	data[0] = 'C';
@@ -444,37 +445,52 @@ void put_at_server(const unsigned char *key, const int key_length,
 		printf("PUT Server Id: %d\n", lserver_id);
 	#endif
 
-	if (!sconn[lserver_id].server_connected) {
-		sprintf(sport, "%d", atoi(servers[lserver_id].serverport));
-		sd = tcp_connect(servers[lserver_id].serverip, sport);
-		sconn[lserver_id].sockfd = sd;
-		sconn[lserver_id].server_connected = true;
-	}
+	/*
+	 * We achieve replication by also registering all files with the next
+	 * server which the hash returned. So if the above hash returns 2, the
+	 * values will be replicated at 3 as well. Logic from class lecture.
+	 */
+	for (int i = lserver_id; i <= (lserver_id + 1); i++) {
+		if (i == MAX_NO_OF_SERVERS) {
+			i = (lserver_id + 1) % MAX_NO_OF_SERVERS;
+			exit = true;
+		}
 
-	noBytesWritten = writen(sconn[lserver_id].sockfd, data, MESSAGE_SIZE);
-	#ifdef DEBUG
-	printf("Bytes written by peer: %d\n", noBytesWritten);
-	#endif
-	memset(data, 0, MESSAGE_SIZE);
-	noBytesRead = readn(sconn[lserver_id].sockfd, data, MESSAGE_SIZE);
-	if (noBytesRead < 0) {
-		sconn[lserver_id].sockfd = -1;
-		sconn[lserver_id].server_connected = false;
-		return;
-	}
-	#ifdef DEBUG
-	printf("Bytes read from server: %d\n", noBytesRead);
-	#endif
-	if (data[0] == 'C' && data[1] == 'S') {
-		if (data[2] == CMD_PUT) {
-			if (data[3] == CMD_OK) {
-				if (!perf_test_on)
-					printf("\nPut operation successful\n");
-			} else {
-				if (!perf_test_on)
-					printf("\nPut operation failed\n");
+		if (!sconn[i].server_connected) {
+			sprintf(sport, "%d", atoi(servers[i].serverport));
+			sd = tcp_connect(servers[i].serverip, sport);
+			sconn[i].sockfd = sd;
+			sconn[i].server_connected = true;
+		}
+
+		noBytesWritten = writen(sconn[i].sockfd, data, MESSAGE_SIZE);
+		#ifdef DEBUG
+		printf("Bytes written by peer: %d\n", noBytesWritten);
+		#endif
+		memset(data, 0, MESSAGE_SIZE);
+		noBytesRead = readn(sconn[i].sockfd, data, MESSAGE_SIZE);
+		if (noBytesRead < 0) {
+			sconn[i].sockfd = -1;
+			sconn[i].server_connected = false;
+			return;
+		}
+		#ifdef DEBUG
+		printf("Bytes read from server: %d\n", noBytesRead);
+		#endif
+		if (data[0] == 'C' && data[1] == 'S') {
+			if (data[2] == CMD_PUT) {
+				if (data[3] == CMD_OK) {
+					if (!perf_test_on)
+						printf("\nPut operation successful\n");
+				} else {
+					if (!perf_test_on)
+						printf("\nPut operation failed\n");
+				}
 			}
 		}
+
+		if (exit)
+			return;
 	}
 }
 
@@ -647,6 +663,7 @@ void get_from_server(const unsigned char *key, const int key_length) {
 	int peerid_start_pos;
 	int noBytesRead;
 	int noBytesWritten;
+	bool retried = false;
 
 	memset(data, 0, MESSAGE_SIZE);
 	data[0] = 'C';
@@ -663,23 +680,57 @@ void get_from_server(const unsigned char *key, const int key_length) {
 		printf("GET Server Id: %d\n", lserver_id);
 	#endif
 
+retry_connection:
 	if (!sconn[lserver_id].server_connected) {
 		sprintf(sport, "%d", atoi(servers[lserver_id].serverport));
 		sd = tcp_connect(servers[lserver_id].serverip, sport);
+		if (sd == -1) {
+			if (retried) {
+				printf("Get operation failed: Both server nodes down\n");
+				return;
+			}
+			lserver_id += 1;
+			if (lserver_id == MAX_NO_OF_SERVERS)
+				lserver_id = lserver_id % MAX_NO_OF_SERVERS;
+			goto retry_connection;
+		}
 		sconn[lserver_id].sockfd = sd;
 		sconn[lserver_id].server_connected = true;
 	}
 
 	noBytesWritten = writen(sconn[lserver_id].sockfd, data, MESSAGE_SIZE);
+	if ((noBytesWritten < 0) || (noBytesWritten == 0)) {
+		if (retried) {
+			printf("Get operation failed: Both server nodes down\n");
+			return;
+		}
+		close(sconn[lserver_id].sockfd);
+		sconn[lserver_id].sockfd = -1;
+		sconn[lserver_id].server_connected = false;
+		lserver_id += 1;
+		if (lserver_id == MAX_NO_OF_SERVERS)
+			lserver_id = lserver_id % MAX_NO_OF_SERVERS;
+		retried = true;
+		goto retry_connection;
+	}
 	#ifdef DEBUG
 	printf("Bytes written by peer: %d\n", noBytesWritten);
 	#endif
 	memset(data, 0x30, MESSAGE_SIZE);
 	noBytesRead = readn(sconn[lserver_id].sockfd, data, MESSAGE_SIZE);
-	if (noBytesRead < 0) {
+	if ((noBytesRead < 0) || (noBytesRead == 0)) {
+		if (retried) {
+			printf("Get operation failed: Both server nodes down\n");
+			return;
+		}
+		close(sconn[lserver_id].sockfd);
 		sconn[lserver_id].sockfd = -1;
 		sconn[lserver_id].server_connected = false;
-		return;
+		lserver_id += 1;
+		if (lserver_id == MAX_NO_OF_SERVERS)
+			lserver_id = lserver_id % MAX_NO_OF_SERVERS;
+		retried = true;
+		goto retry_connection;
 	}
 	#ifdef DEBUG
 	printf("Bytes read from server: %d\n", noBytesRead);
