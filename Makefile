@@ -4,13 +4,9 @@ CFLAGS = -g -w
 
 all:
 	make dht
-	make server
 
-dht: error.o common.o dht.o
-	${CC} ${CFLAGS} ${LIBS} error.o dht.o common.o -odht
-
-server: workqueue.o server.o
-	${CC} ${CFLAGS} ${LIBS} -levent workqueue.o server.o -oserver
+dht: workqueue.o error.o common.o dht.o
+	${CC} ${CFLAGS} ${LIBS} workqueue.o error.o dht.o common.o -odht
 
 clean:
 	rm *.o
