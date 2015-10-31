@@ -629,6 +629,7 @@ void register_with_server(void) {
 			if (result->d_type == DT_REG)
 				put_at_server(result->d_name, strlen(result->d_name), peerid, strlen(peerid));
 		}
+		closedir(d);
 	} else {
 		perror("Could not open directory");
 	}
@@ -673,21 +674,28 @@ void process_data_from_get(unsigned char *peerid,
 		free(tokens);
 	}
 
-	/* Peer select logic */
-loopforuserinput:
-	i = 0;
-	printf("Available Peers: %d\n", j);
-	while (i < j) {
-		printf("Peer %d: %s %s\n", i, peerip[i], peerport[i]);
-		i++;
-	}
+	/*
+	 * If perf tests are running, we just always select the first peer
+	 * and just bypass this logic inside "if".
+	 */
+	if (!perf_test_on) {
+		/* Peer select logic */
+		loopforuserinput:
+		i = 0;
+		printf("Available Peers: %d\n", j);
+		while (i < j) {
+			printf("Peer %d: %s %s\n", i, peerip[i], peerport[i]);
+			i++;
+		}
 
-	printf("Enter the number of peer you want to connect to: \t");
-	scanf("%d", &peerinput);
-	if ((peerinput < 0) || (peerinput > j)) {
-		printf("Wrong input. Enter again\n\n");
-		goto loopforuserinput;
-	}
+		printf("Enter the number of peer you want to connect to: \t");
+		scanf("%d", &peerinput);
+		if ((peerinput < 0) || (peerinput > j)) {
+			printf("Wrong input. Enter again\n\n");
+			goto loopforuserinput;
+		}
+	} else
+		peerinput = 0;
 
 #ifdef DEBUG
 	printf("Connecting to peer at %s on port %s\n", peerip[peerinput], peerport[peerinput]);
@@ -731,6 +739,7 @@ loopforuserinput:
 	readbuffer = (char *)malloc(READ_BUFFER_SIZE);
 	if (!readbuffer) {
 		perror("Could not allocate memory for buffer");
+		close(fd);
 		return;
 	}
 	memset(readbuffer, 0, READ_BUFFER_SIZE);
@@ -866,6 +875,108 @@ retry_connection:
 	}
 }
 
+/*
+ * This function is added solely for the purpose of testing by seperating
+ * the SEARCH operation from OBTAIN for timing measurements.
+ */
+void test_get_from_server(const unsigned char *key, const int key_length) {
+	unsigned char data[MESSAGE_SIZE];
+	char sport[32] = {0};
+	int sd;
+	int lserver_id;
+	int peerid_start_pos;
+	int noBytesRead;
+	int noBytesWritten;
+	bool retried = false;
+
+	memset(data, 0, MESSAGE_SIZE);
+	data[0] = 'C';
+	data[1] = 'S';
+	data[2] = CMD_GET;
+	data[3] = 0;
+
+	data[4] = key_length;
+	strncpy(&data[KEY_START_POS], key, key_length);
+
+	lserver_id = hash_peer(&data[KEY_START_POS], key_length);
+	#ifdef DEBUG
+	if (!perf_test_on)
+		printf("GET Server Id: %d\n", lserver_id);
+	#endif
+
+retry_connection:
+	if (!sconn[lserver_id].server_connected) {
+		sprintf(sport, "%d", atoi(servers[lserver_id].serverport));
+		sd = tcp_connect(servers[lserver_id].serverip, sport);
+		if (sd == -1) {
+			if (retried) {
+				printf("Get operation failed: Both server nodes down\n");
+				return;
+			}
+			lserver_id += 1;
+			if (lserver_id == MAX_NO_OF_SERVERS)
+				lserver_id = lserver_id % MAX_NO_OF_SERVERS;
+			goto retry_connection;
+		}
+		sconn[lserver_id].sockfd = sd;
+		sconn[lserver_id].server_connected = true;
+	}
+
+	noBytesWritten = writen(sconn[lserver_id].sockfd, data, MESSAGE_SIZE);
+	if ((noBytesWritten < 0) || (noBytesWritten == 0)) {
+		if (retried) {
+			printf("Get operation failed: Both server nodes down\n");
+			return;
+		}
+		close(sconn[lserver_id].sockfd);
+		sconn[lserver_id].sockfd = -1;
+		sconn[lserver_id].server_connected = false;
+		lserver_id += 1;
+		if (lserver_id == MAX_NO_OF_SERVERS)
+			lserver_id = lserver_id % MAX_NO_OF_SERVERS;
+		retried = true;
+		goto retry_connection;
+	}
+	#ifdef DEBUG
+	printf("Bytes written by peer: %d\n", noBytesWritten);
+	#endif
+	memset(data, 0x30, MESSAGE_SIZE);
+	noBytesRead = readn(sconn[lserver_id].sockfd, data, MESSAGE_SIZE);
+	if ((noBytesRead < 0) || (noBytesRead == 0)) {
+		if (retried) {
+			printf("Get operation failed: Both server nodes down\n");
+			return;
+		}
+		close(sconn[lserver_id].sockfd);
+		sconn[lserver_id].sockfd = -1;
+		sconn[lserver_id].server_connected = false;
+		lserver_id += 1;
+		if (lserver_id == MAX_NO_OF_SERVERS)
+			lserver_id = lserver_id % MAX_NO_OF_SERVERS;
+		retried = true;
+		goto retry_connection;
+	}
+	#ifdef DEBUG
+	printf("Bytes read from server: %d\n", noBytesRead);
+	#endif
+	if (data[0] == 'C' && data[1] == 'S') {
+		if (data[2] == CMD_GET) {
+			if (data[3] == CMD_OK) {
+				if (!perf_test_on) {
+					printf("\nGet operation successful\n");
+				}
+				/* Commented for purposes of testing.  See comment above */
+				/* peerid_start_pos = KEY_START_POS + data[KEY_LENGTH_POS] + 1; */
+				/* process_data_from_get(&data[peerid_start_pos], key, key_length); */
+			} else {
+				if (!perf_test_on) {
+					printf("\nGet operation failed\n");
+				}
+			}
+		}
+	}
+}
+
 void delete_from_server(const unsigned char *key, const int key_length) {
 	unsigned char data[MESSAGE_SIZE];
 	int lserver_id;
@@ -873,6 +984,7 @@ void delete_from_server(const unsigned char *key, const int key_length) {
 	char sport[32] = {0};
 	int noBytesRead;
 	int noBytesWritten;
+	bool exit;
 
 	memset(data, 0, MESSAGE_SIZE);
 	data[0] = 'C';
@@ -884,46 +996,156 @@ void delete_from_server(const unsigned char *key, const int key_length) {
 	strncpy(&data[KEY_START_POS], key, key_length);
 
 	lserver_id = hash_peer(&data[KEY_START_POS], key_length);
+	#ifdef DEBUG
 	if (!perf_test_on)
 		printf("DEL Server Id: %d\n", lserver_id);
-
-	if (!sconn[lserver_id].server_connected) {
-		sprintf(sport, "%d", atoi(servers[lserver_id].serverport));
-		sd = tcp_connect(servers[lserver_id].serverip, sport);
-		sconn[lserver_id].sockfd = sd;
-		sconn[lserver_id].server_connected = true;
-	}
-
-	noBytesWritten = writen(sconn[lserver_id].sockfd, data, MESSAGE_SIZE);
-	#ifdef DEBUG
-	printf("Bytes written by peer: %d\n", noBytesWritten);
 	#endif
-	memset(data, 0x30, MESSAGE_SIZE);
-	noBytesRead = readn(sconn[lserver_id].sockfd, data, MESSAGE_SIZE);
-	if (noBytesRead < 0) {
-		sconn[lserver_id].sockfd = -1;
-		sconn[lserver_id].server_connected = false;
-		return;
-	}
-	#ifdef DEBUG
-	printf("Bytes read from server: %d\n", noBytesRead);
-	#endif
-	if (data[0] == 'C' && data[1] == 'S') {
-		if (data[2] == CMD_DEL) {
-			if (data[3] == CMD_OK) {
-				if (!perf_test_on) {
-					printf("\nDel operation successful\n");
-				}
-			} else {
-				if (!perf_test_on) {
-					printf("\nDel operation failed\n");
+
+	/*
+	 * We achieve replication by also registering all files with the next
+	 * server which the hash returned. So if the above hash returns 2, the
+	 * values will be replicated at 3 as well. Logic from class lecture.
+	 */
+	for (int i = lserver_id; i <= (lserver_id + 1); i++) {
+		if (i == MAX_NO_OF_SERVERS) {
+			i = (lserver_id + 1) % MAX_NO_OF_SERVERS;
+			exit = true;
+		}
+
+		if (!sconn[i].server_connected) {
+			sprintf(sport, "%d", atoi(servers[i].serverport));
+			sd = tcp_connect(servers[i].serverip, sport);
+			sconn[i].sockfd = sd;
+			sconn[i].server_connected = true;
+		}
+
+		noBytesWritten = writen(sconn[i].sockfd, data, MESSAGE_SIZE);
+		#ifdef DEBUG
+		printf("Bytes written by peer: %d\n", noBytesWritten);
+		#endif
+		memset(data, 0x30, MESSAGE_SIZE);
+		noBytesRead = readn(sconn[i].sockfd, data, MESSAGE_SIZE);
+		if (noBytesRead < 0) {
+			sconn[i].sockfd = -1;
+			sconn[i].server_connected = false;
+			return;
+		}
+		#ifdef DEBUG
+		printf("Bytes read from server: %d\n", noBytesRead);
+		#endif
+		if (data[0] == 'C' && data[1] == 'S') {
+			if (data[2] == CMD_DEL) {
+				if (data[3] == CMD_OK) {
+					if (!perf_test_on) {
+						printf("\nDel operation successful\n");
+					}
+				} else {
+					if (!perf_test_on) {
+						printf("\nDel operation failed\n");
+					}
 				}
 			}
 		}
+
+		if (exit)
+			return;
+	}
+}
+
+void delete_with_server(void) {
+	struct dirent dirent, *result;
+	unsigned char peerid[PEER_ID_SIZE];
+	DIR *d;
+
+	memset(peerid, 0, PEER_ID_SIZE);
+	strncat(peerid, servers[server_id].serverip, PEER_ID_SIZE);
+	strncat(peerid, " ", PEER_ID_SIZE - strlen(peerid));
+	strncat(peerid, servers[server_id].serverport, PEER_ID_SIZE - strlen(peerid));
+
+	d = opendir(dir_to_be_shared);
+	if (d) {
+		/* Use the MT safe reentrant version of readdir */
+		while (readdir_r(d, &dirent, &result) == 0) {
+			if (result == NULL)
+				break;
+
+			/* We check if it is a regular file. See 'man readdir_r' */
+			if (result->d_type == DT_REG)
+				delete_from_server(result->d_name, strlen(result->d_name));
+		}
+		closedir(d);
+	} else {
+		perror("Could not open directory");
 	}
 }
 
 void run_perf_tests(void) {
+	int i;
+	char key[KEY_SIZE];
+	struct timeval t1, t2;
+	double elapsedtime, totalelapsedtime, searchtime;
+
+	perf_test_on = true;
+	memset(key, 0, KEY_SIZE);
+
+	/* Run REGISTER tests */
+	for (i = 0; i < NO_OF_TEST_ITERATIONS; i++) {
+		gettimeofday(&t1, NULL);
+		register_with_server();
+		gettimeofday(&t2, NULL);
+		// compute and print the elapsed time in millisec
+		elapsedtime = (t2.tv_sec - t1.tv_sec) * 1000.0;      // sec to ms
+		elapsedtime += (t2.tv_usec - t1.tv_usec) / 1000.0;   // us to ms
+#ifdef DEBUG
+		printf("Elapsed time: %f\n", elapsedtime);
+#endif
+		totalelapsedtime += elapsedtime;
+		/* We need to delete from server our previous registration */
+		/* delete_with_server(); */
+	}
+	printf("Average Response time for PUT requests: %f ms\n", totalelapsedtime / NO_OF_TEST_ITERATIONS);
+	printf("\nEnter name of file which will be used\n");
+	printf("for testing SEARCH and OBTAIN operations: \t");
+	/* File name is our key */
+	scanf("%s", key);
+	printf("\n");
+
+	/* Run SEARCH tests */
+	for (i = 0; i < NO_OF_TEST_ITERATIONS; i++) {
+		gettimeofday(&t1, NULL);
+		test_get_from_server(key, strlen(key));
+		gettimeofday(&t2, NULL);
+		// compute and print the elapsed time in millisec
+		elapsedtime = (t2.tv_sec - t1.tv_sec) * 1000.0;      // sec to ms
+		elapsedtime += (t2.tv_usec - t1.tv_usec) / 1000.0;   // us to ms
+#ifdef DEBUG
+		printf("Elapsed time: %f\n", elapsedtime);
+#endif
+		totalelapsedtime += elapsedtime;
+	}
+	printf("Average Response time for SEARCH requests: %f ms\n", totalelapsedtime / NO_OF_TEST_ITERATIONS);
+	searchtime = totalelapsedtime / NO_OF_TEST_ITERATIONS;
+
+	/* Run OBTAIN tests */
+	for (i = 0; i < NO_OF_TEST_ITERATIONS; i++) {
+		gettimeofday(&t1, NULL);
+		get_from_server(key, strlen(key));
+		gettimeofday(&t2, NULL);
+		// compute and print the elapsed time in millisec
+		elapsedtime = (t2.tv_sec - t1.tv_sec) * 1000.0;      // sec to ms
+		elapsedtime += (t2.tv_usec - t1.tv_usec) / 1000.0;   // us to ms
+#ifdef DEBUG
+		printf("Elapsed time: %f\n", elapsedtime);
+#endif
+		totalelapsedtime += elapsedtime;
+		if (remove(key) != 0) {
+			perror("File deletion failed for next iteration");
+			break;
+		}
+	}
+	printf("Average Response time for OBTAIN requests: %f ms\n", (totalelapsedtime / NO_OF_TEST_ITERATIONS) - searchtime);
+
+	perf_test_on = false;
 }
 
 void input_process(void) {
@@ -983,12 +1205,12 @@ int main(int argc, char *argv[]) {
 	char sport[32] = {0};
 	unsigned char **tokens = NULL;
 
-	if (argc != 4) {
+	if (argc != 5) {
 		/*
 		 * We do not validate or error check any of the arguments
 		 * Please enter correct arguments
 		 */
-		printf("Usage: ./server <serverid#> </path/to/server/conf/file> </dir/to/be/shared>");
+		printf("Usage: ./server <serverid#> </path/to/server/conf/file> </dir/to/be/shared> </ip/to/bind/to/>\n");
 		exit(1);
 	}
 
@@ -1044,7 +1266,23 @@ int main(int argc, char *argv[]) {
 	}
 
 	sprintf(sport, "%d", atoi(servers[server_id].serverport));
-	listenfd = tcp_listen(servers[server_id].serverip,
+
+	/*
+	 * Instead of taking the own IP from server file, we specify the IP
+	 * to bind to on the command line. This is done primarily for working
+	 * with AWS. On AWS, while it is possible to connect using the public
+	 * IP of an EC2 instance to another instance, it is not possible to bind
+	 * to the public IP of one's own EC2 instance. So we specify the local IP
+	 * to bind to here and public IP will be mentioned in the server configu-
+	 * ration file. For example, if an EC2 instance has public IP 52.32.4.155
+	 * and local IP as 172.31.9.81 we can bind to 172.31.9.81 while we cannot
+	 * bind to 52.32.4.155. However others need to see public IP and we need
+	 * to advertise our own public IP but bind to this IP. The rest of the
+	 * code uses public IP but we just bind and use the local IP here. We
+	 * make this compulsory everywhere local machine or otherwise to keep
+	 * consistency and easy handling.
+	 */
+	listenfd = tcp_listen(argv[4],										//servers[server_id].serverip,
 					sport, &addr_length);
 
 	/*
