@@ -756,7 +756,8 @@ void process_data_from_get(unsigned char *peerid,
 				   readbuffer[noBytesRead - 2] == 'O' &&
 				   readbuffer[noBytesRead - 3] == 'E') {
 			noBytesWritten = write(fd, readbuffer, noBytesRead - 3);
-			printf("File transfer complete\n");
+			if (!perf_test_on)
+				printf("File transfer complete\n");
 			goto break_read_loop;
 		}
 		noBytesWritten = write(fd, readbuffer, noBytesRead);
@@ -1101,8 +1102,9 @@ void run_perf_tests(void) {
 #endif
 		totalelapsedtime += elapsedtime;
 		/* We need to delete from server our previous registration */
-		/* delete_with_server(); */
+		delete_with_server();
 	}
+	register_with_server();
 	printf("Average Response time for PUT requests: %f ms\n", totalelapsedtime / NO_OF_TEST_ITERATIONS);
 	printf("\nEnter name of file which will be used\n");
 	printf("for testing SEARCH and OBTAIN operations: \t");
