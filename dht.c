@@ -447,6 +447,11 @@ void *server_thread(void *arg) {
 				 */
 				printf("epoll error\n");
 				close(events[i].data.fd);
+				for (int j = 0; j < MAX_NO_OF_SERVERS; j++)
+					if (events[i].data.fd == sconn[i].sockfd) {
+						sconn[i].sockfd = -1;
+						sconn[i].server_connected = false;
+					}
 				continue;
 			} else if (listenfd == events[i].data.fd) {
 				/*
@@ -481,7 +486,7 @@ void *server_thread(void *arg) {
 					*/
 
 					event.data.fd = infd;
-					event.events = EPOLLIN;
+					event.events = EPOLLIN | EPOLLERR | EPOLLHUP;
 					ret = epoll_ctl(efd, EPOLL_CTL_ADD, infd, &event);
 					if (ret == -1) {
 						perror("Error with epoll_ctl");
