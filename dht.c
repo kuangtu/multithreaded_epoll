@@ -461,7 +461,7 @@ void *server_thread(void *arg) {
 	socklen_t client_length;
 	struct sockaddr *client_address;
 	int infd, ret;
-	int n, i;
+	int n, i, j;
 	job_t *job;
 	job_data *job_wq_data;
 
@@ -502,7 +502,7 @@ void *server_thread(void *arg) {
 				 */
 				printf("epoll error\n");
 				close(events[i].data.fd);
-				for (int j = 0; j < MAX_NO_OF_SERVERS; j++)
+				for (j = 0; j < MAX_NO_OF_SERVERS; j++)
 					if (events[i].data.fd == sconn[i].sockfd) {
 						sconn[i].sockfd = -1;
 						sconn[i].server_connected = false;
@@ -591,7 +591,7 @@ void put_at_server(const unsigned char *key, const int key_length,
 				   const unsigned char *value, const int value_length) {
 	unsigned char data[MESSAGE_SIZE];
 	int lserver_id;
-	int sd;
+	int i, sd;
 	char sport[32] = {0};
 	int noBytesRead;
 	int noBytesWritten;
@@ -619,7 +619,7 @@ void put_at_server(const unsigned char *key, const int key_length,
 	 * server which the hash returned. So if the above hash returns 2, the
 	 * values will be replicated at 3 as well. Logic from class lecture.
 	 */
-	for (int i = lserver_id; i <= (lserver_id + 1); i++) {
+	for (i = lserver_id; i <= (lserver_id + 1); i++) {
 		if (i == MAX_NO_OF_SERVERS) {
 			i = (lserver_id + 1) % MAX_NO_OF_SERVERS;
 			exit = true;
@@ -1194,7 +1194,7 @@ retry_connection:
 void delete_from_server(const unsigned char *key, const int key_length) {
 	unsigned char data[MESSAGE_SIZE];
 	int lserver_id;
-	int sd;
+	int i, sd;
 	char sport[32] = {0};
 	int noBytesRead;
 	int noBytesWritten;
@@ -1220,7 +1220,7 @@ void delete_from_server(const unsigned char *key, const int key_length) {
 	 * server which the hash returned. So if the above hash returns 2, the
 	 * values will be replicated at 3 as well. Logic from class lecture.
 	 */
-	for (int i = lserver_id; i <= (lserver_id + 1); i++) {
+	for (i = lserver_id; i <= (lserver_id + 1); i++) {
 		if (i == MAX_NO_OF_SERVERS) {
 			i = (lserver_id + 1) % MAX_NO_OF_SERVERS;
 			exit = true;
@@ -1318,7 +1318,7 @@ void run_perf_tests(void) {
 		delete_with_server();
 	}
 	register_with_server();
-	printf("Average Response time for PUT requests: %f ms\n", totalelapsedtime / NO_OF_TEST_ITERATIONS);
+	printf("Average Response time for REGISTER requests: %f ms\n", totalelapsedtime / NO_OF_TEST_ITERATIONS);
 	printf("\nEnter name of file which will be used\n");
 	printf("for testing SEARCH and OBTAIN operations: \t");
 	/* File name is our key */
