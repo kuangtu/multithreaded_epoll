@@ -1293,7 +1293,7 @@ void delete_with_server(void) {
 	}
 }
 
-void run_perf_tests(void) {
+void run_register_tests(void) {
 	int i;
 	char key[KEY_SIZE];
 	char filename[KEY_SIZE];
@@ -1318,8 +1318,21 @@ void run_perf_tests(void) {
 		/* We need to delete from server our previous registration */
 		delete_with_server();
 	}
-	register_with_server();
 	printf("Average Response time for REGISTER requests: %f ms\n", totalelapsedtime / NO_OF_TEST_ITERATIONS);
+
+	perf_test_on = false;
+}
+
+void run_search_obtain_tests(void) {
+	int i;
+	char key[KEY_SIZE];
+	char filename[KEY_SIZE];
+	struct timeval t1, t2;
+	double elapsedtime, totalelapsedtime, searchtime;
+
+	perf_test_on = true;
+	memset(key, 0, KEY_SIZE);
+
 	printf("\nEnter name of file which will be used\n");
 	printf("for testing SEARCH and OBTAIN operations: \t");
 	/* File name is our key */
@@ -1378,9 +1391,10 @@ void input_process(void) {
 	memset(key, 0, KEY_SIZE);
 	while (!exitloop) {
 		printf("\nSelect Operation\n");
-		printf("(1) Register (2) Get file (3) Run tests\n");
-		printf("(4) Replicate (5) Exit");
-		printf("\nPlease enter your selection (1-5)\t");
+		printf("(1) Register (2) Get file\n");
+		printf("(3) Run Register tests (4) Run search and obtain tests\n");
+		printf("(5) Replicate (6) Exit");
+		printf("\nPlease enter your selection (1-6)\t");
 
 		scanf("%d", &input);
 		getchar();
@@ -1397,12 +1411,15 @@ void input_process(void) {
 			get_from_server(key, strlen(key));
 			break;
 		case 3:
-			run_perf_tests();
+			run_register_tests();
 			break;
 		case 4:
-			replicate_with_server();
+			run_search_obtain_tests();
 			break;
 		case 5:
+			replicate_with_server();
+			break;
+		case 6:
 			workqueue_shutdown(&workqueue);
 			exitloop = true;
 			break;
