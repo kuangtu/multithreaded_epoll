@@ -1296,6 +1296,7 @@ void delete_with_server(void) {
 void run_perf_tests(void) {
 	int i;
 	char key[KEY_SIZE];
+	char filename[KEY_SIZE];
 	struct timeval t1, t2;
 	double elapsedtime, totalelapsedtime, searchtime;
 
@@ -1323,7 +1324,6 @@ void run_perf_tests(void) {
 	printf("for testing SEARCH and OBTAIN operations: \t");
 	/* File name is our key */
 	scanf("%s", key);
-	printf("\n");
 
 	/* Run SEARCH tests */
 	for (i = 0; i < NO_OF_TEST_ITERATIONS; i++) {
@@ -1342,6 +1342,9 @@ void run_perf_tests(void) {
 	searchtime = totalelapsedtime / NO_OF_TEST_ITERATIONS;
 
 	/* Run OBTAIN tests */
+	memset(filename, 0, KEY_SIZE);
+	strncat(filename, dir_to_be_shared, strlen(dir_to_be_shared));
+	strncat(filename, key, strlen(key));
 	for (i = 0; i < NO_OF_TEST_ITERATIONS; i++) {
 		gettimeofday(&t1, NULL);
 		get_from_server(key, strlen(key));
@@ -1353,7 +1356,8 @@ void run_perf_tests(void) {
 		printf("Elapsed time: %f\n", elapsedtime);
 #endif
 		totalelapsedtime += elapsedtime;
-		if (remove(key) != 0) {
+		printf("DEL filename: %s\n", filename);
+		if (remove(filename) != 0) {
 			perror("File deletion failed for next iteration");
 			break;
 		}
