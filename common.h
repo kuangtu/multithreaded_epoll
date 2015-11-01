@@ -75,6 +75,7 @@
 #define PEER_ID_SIZE			64
 #define MAXEVENTS				2 * MAX_NO_OF_SERVERS
 #define NUMBER_OF_WQS			3
+#define REPLICATE_DELAY			50000
 
 /* Commands from peers */
 #define CMD_PUT					0x01
@@ -84,6 +85,8 @@
 #define CMD_OK					0x05
 #define CMD_PEER_REQ			0x06
 #define CMD_TRANSFER_COMPLETE	0x07
+#define CMD_FILE_REPLICATE		0x08
+#define CMD_PEER_REQ_REPLICATE	0x09
 
 /* Behaves similarly to fprintf(stderr, ...), but adds file, line, and function
    information. */

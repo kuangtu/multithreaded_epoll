@@ -327,8 +327,13 @@ static void process_peer_request(struct job *job) {
 			noBytesWritten = writen(connfd, data, MESSAGE_SIZE);
 			break;
 		case CMD_PEER_REQ:
+		case CMD_PEER_REQ_REPLICATE:
 			memset(filename, 0, KEY_SIZE);
 			strncpy(filename, dir_to_be_shared, strlen(dir_to_be_shared));
+			if (data[2] == CMD_PEER_REQ_REPLICATE) {
+				printf("Serving replica request\n");
+				strncat(filename, "replica/", 8);
+			}
 			strncat(filename, &data[KEY_START_POS], data[KEY_LENGTH_POS]);
 			filename[strlen(filename) + 1] = '\0';
 			#ifdef DEBUG
@@ -340,14 +345,14 @@ static void process_peer_request(struct job *job) {
 			status = stat(filename, &statbuffer);
 			if (status != 0) {
 				perror("Could not get file info\n");
-				goto break_out;
+				goto break1_out;
 			}
 
 			file_bytes_counter = 0;
 			fd = open(filename, O_RDONLY);
 			if (fd == -1) {
 				perror("Server: Error opening file");
-				goto break_out;
+				goto break1_out;
 			} else {
 				noBytesRead = noBytesWritten = 0;
 				while ((noBytesRead = read(fd, readbuffer, READ_BUFFER_SIZE)) > 0) {
@@ -380,7 +385,57 @@ exit_while_loop:
 				perror("Server: Error on closing file");
 
 			break;
-break_out:
+break1_out:
+			readbuffer[3] = CMD_ERR;
+			noBytesWritten = writen(connfd, readbuffer, HEADER_SIZE);
+			break;
+		case CMD_FILE_REPLICATE:
+			memset(filename, 0, KEY_SIZE);
+			strncpy(filename, dir_to_be_shared, strlen(dir_to_be_shared));
+			strncat(filename, "replica/", 8);
+			strncat(filename, &data[KEY_START_POS], data[KEY_LENGTH_POS]);
+			filename[strlen(filename) + 1] = '\0';
+			#ifdef DEBUG
+			printf("File %s request received from peer\n", filename);
+			#endif
+
+			memset(readbuffer, 0, READ_BUFFER_SIZE);
+			fd = open(filename, O_WRONLY | O_CREAT, 0666);
+			if (fd == -1) {
+				perror("Server: Error opening file");
+				goto break2_out;
+			} else {
+				noBytesRead = noBytesWritten = 0;
+				while ((noBytesRead = read(connfd, readbuffer, READ_BUFFER_SIZE)) > 0) {
+					if (readbuffer[0] == 'C' && readbuffer[1] == 'S' &&
+						readbuffer[2] == CMD_FILE_REPLICATE && readbuffer[3] == CMD_ERR) {
+						printf("Server: Error occured on file server\n");
+						goto break_read_loop;
+					} else if (readbuffer[noBytesRead - 1] == 'F' &&
+							readbuffer[noBytesRead - 2] == 'O' &&
+							readbuffer[noBytesRead - 3] == 'E') {
+						noBytesWritten = write(fd, readbuffer, noBytesRead - 3);
+						if (!perf_test_on)
+							printf("File transfer complete\n");
+						goto break_read_loop;
+					}
+					noBytesWritten = write(fd, readbuffer, noBytesRead);
+					#ifdef DEBUG
+					printf("Server: File: %s Number of bytes read: %d written: %d\n", filename, noBytesRead, noBytesWritten);
+					#endif
+					if (noBytesRead != noBytesWritten)
+						perror("Server: Could not write whole buffer");
+					memset(readbuffer, 0, READ_BUFFER_SIZE);
+				}
+			break_read_loop:
+				if (noBytesRead == -1)
+					perror("Server: Error on reading");
+
+				if (close(fd) == -1)
+					perror("Server: Error on closing file");
+			}
+			break;
+			break2_out:
 			readbuffer[3] = CMD_ERR;
 			noBytesWritten = writen(connfd, readbuffer, HEADER_SIZE);
 			break;
@@ -635,6 +690,125 @@ void register_with_server(void) {
 	}
 }
 
+void replicate_at_server(const unsigned char *key, const int key_length) {
+	unsigned char data[MESSAGE_SIZE];
+	int lserver_id;
+	int sd;
+	char sport[32] = {0};
+	int noBytesRead;
+	int noBytesWritten;
+	int fd, status;
+	unsigned int file_bytes_counter;
+	struct stat statbuffer;
+	char readbuffer[READ_BUFFER_SIZE];
+	char filename[KEY_SIZE];
+
+	memset(filename, 0, KEY_SIZE);
+	strncat(filename, dir_to_be_shared, strlen(dir_to_be_shared));
+	strncat(filename, key, key_length);
+	status = stat(filename, &statbuffer);
+	if (status != 0) {
+		perror("Could not get file info\n");
+		return;
+	}
+
+	memset(data, 0, MESSAGE_SIZE);
+	data[0] = 'C';
+	data[1] = 'S';
+	data[2] = CMD_FILE_REPLICATE;
+	data[3] = 0;
+
+	data[KEY_LENGTH_POS] = key_length;
+	strncpy(&data[KEY_START_POS], key, key_length);
+
+	lserver_id = server_id + 1;
+	if (lserver_id == MAX_NO_OF_SERVERS)
+		lserver_id = lserver_id % MAX_NO_OF_SERVERS;
+	#ifdef DEBUG
+	if (!perf_test_on)
+		printf("REPLICATE Server Id: %d\n", lserver_id);
+	#endif
+
+	if (!sconn[lserver_id].server_connected) {
+		sprintf(sport, "%d", atoi(servers[lserver_id].serverport));
+		sd = tcp_connect(servers[lserver_id].serverip, sport);
+		sconn[lserver_id].sockfd = sd;
+		sconn[lserver_id].server_connected = true;
+	}
+
+	noBytesWritten = writen(sconn[lserver_id].sockfd, data, MESSAGE_SIZE);
+	#ifdef DEBUG
+	printf("Bytes written by peer: %d\n", noBytesWritten);
+	#endif
+	memset(data, 0, MESSAGE_SIZE);
+
+	file_bytes_counter = 0;
+	fd = open(filename, O_RDONLY);
+	if (fd == -1) {
+		perror("Peer: Error opening file");
+		goto break_out;
+	} else {
+		noBytesRead = noBytesWritten = 0;
+		while ((noBytesRead = read(fd, readbuffer, READ_BUFFER_SIZE)) > 0) {
+			file_bytes_counter += noBytesRead;
+			if (file_bytes_counter == statbuffer.st_size) {
+				readbuffer[noBytesRead] = 'E';
+				readbuffer[noBytesRead + 1] = 'O';
+				readbuffer[noBytesRead + 2] = 'F';
+				noBytesWritten = write(sconn[lserver_id].sockfd, readbuffer, noBytesRead + 3);
+				#ifdef DEBUG
+				printf("Peer: Number of bytes read: %d written: %d\n", noBytesRead + 3, noBytesWritten);
+				#endif
+				if (noBytesRead + 3 != noBytesWritten)
+					perror("Peer: Could not write whole buffer");
+				goto exit_while_loop;
+			}
+			noBytesWritten = write(sconn[lserver_id].sockfd, readbuffer, noBytesRead);
+			#ifdef DEBUG
+			printf("Peer: Number of bytes read: %d written: %d\n", noBytesRead, noBytesWritten);
+			#endif
+			if (noBytesRead != noBytesWritten)
+				perror("Peer: Could not write whole buffer");
+			memset(readbuffer, 0, READ_BUFFER_SIZE);
+		}
+	}
+exit_while_loop:
+	if (noBytesRead == -1)
+		perror("Server: Error on reading");
+	if (close(fd) == -1)
+		perror("Server: Error on closing file");
+	return;
+break_out:
+	readbuffer[3] = CMD_ERR;
+	noBytesWritten = writen(sconn[lserver_id].sockfd, readbuffer, HEADER_SIZE);
+}
+
+void replicate_with_server(void) {
+	struct dirent dirent, *result;
+	DIR *d;
+
+	d = opendir(dir_to_be_shared);
+	if (d) {
+		while (readdir_r(d, &dirent, &result) == 0) {
+			if (result == NULL)
+				break;
+
+			if (result->d_type == DT_REG) {
+				/*
+				 * This delay is used as transfer on local system is too
+				 * fast and the transfer gets cascaded and written as a
+				 * single file on the other end.
+				 */
+				usleep(REPLICATE_DELAY);
+				replicate_at_server(result->d_name, strlen(result->d_name));
+			}
+		}
+		closedir(d);
+	} else {
+		perror("Could not open directory");
+	}
+}
+
 void process_data_from_get(unsigned char *peerid,
 						   const unsigned char *key, const int key_length) {
 	int i, j, k, l;
@@ -647,9 +821,11 @@ void process_data_from_get(unsigned char *peerid,
 	unsigned char filename[KEY_SIZE];
 	char sport[32] = {0};
 	int noBytesRead, noBytesWritten;
+	int cur_server_index;
 	int peerinput;
 	int peerfd;
 	int fd;
+	bool retrial = false;
 
 	memset(peerip, 0, sizeof(peerip));
 	memset(peerport, 0, sizeof(peerport));
@@ -706,10 +882,12 @@ void process_data_from_get(unsigned char *peerid,
 		if ((strcmp(peerip[peerinput], servers[l].serverip) == 0) &&
 			(strcmp(peerport[peerinput], servers[l].serverport) == 0))
 			if (sconn[l].server_connected) {
+				cur_server_index = l;
 				peerfd = sconn[l].sockfd;
 				#ifdef DEBUG
 				printf("Already connected to peer\n");
 				#endif
+				break;
 			}
 	}
 
@@ -718,10 +896,14 @@ void process_data_from_get(unsigned char *peerid,
 		peerfd = tcp_connect(peerip[peerinput], sport);
 	}
 
+retry_connection_to_replica:
 	memset(data, 0, MESSAGE_SIZE);
 	data[0] = 'C';
 	data[1] = 'S';
-	data[2] = CMD_PEER_REQ;
+	if (retrial)
+		data[2] = CMD_PEER_REQ_REPLICATE;
+	else
+		data[2] = CMD_PEER_REQ;
 	data[3] = 0;
 	data[4] = key_length;
 	strncat(&data[KEY_START_POS], key, key_length);
@@ -729,8 +911,9 @@ void process_data_from_get(unsigned char *peerid,
 	writen(peerfd, data, MESSAGE_SIZE);
 
 	memset(filename, 0, KEY_SIZE);
-	strncpy(filename, key, key_length);
-	fd = open(filename, O_WRONLY | O_CREAT);
+	strncat(filename, dir_to_be_shared, strlen(dir_to_be_shared));
+	strncat(filename, key, key_length);
+	fd = open(filename, O_WRONLY | O_CREAT, 0666);
 	if (fd == -1) {
 		perror("Error opening file");
 		return;
@@ -768,6 +951,36 @@ void process_data_from_get(unsigned char *peerid,
 			perror("Peer: Could not write whole buffer");
 		memset(readbuffer, 0, READ_BUFFER_SIZE);
 	}
+
+	if (noBytesRead == 0) {
+		/* This denotes that the connection was closed somehow */
+		printf("Peer selected is down\n");
+		peerfd = -1;
+		/* Since we are gonna jump back undo whatever needs to be undone */
+		close(fd);
+		remove(filename);
+		free(readbuffer);
+		close(sconn[cur_server_index].sockfd);
+		sconn[cur_server_index].sockfd = -1;
+		sconn[cur_server_index].server_connected = false;
+		cur_server_index += 1;
+		if (cur_server_index == MAX_NO_OF_SERVERS)
+			cur_server_index = cur_server_index % MAX_NO_OF_SERVERS;
+		if (sconn[cur_server_index].server_connected) {
+			printf("Using existing connection for replica\n");
+			peerfd = sconn[cur_server_index].sockfd;
+		}
+		else {
+			printf("Establishing new connection\n");
+			memset(sport, 0, 32);
+			sprintf(sport, "%d", atoi(servers[cur_server_index].serverport));
+			peerfd = tcp_connect(servers[cur_server_index].serverip, sport);
+		}
+		retrial = true;
+		printf("Connecting to replica on node %d\n", cur_server_index);
+		goto retry_connection_to_replica;
+	}
+
 break_read_loop:
 	if (noBytesRead == -1)
 		perror("Peer: Error on reading");
@@ -1162,8 +1375,8 @@ void input_process(void) {
 	while (!exitloop) {
 		printf("\nSelect Operation\n");
 		printf("(1) Register (2) Get file (3) Run tests\n");
-		printf("(4) Exit");
-		printf("\nPlease enter your selection (1-4)\t");
+		printf("(4) Replicate (5) Exit");
+		printf("\nPlease enter your selection (1-5)\t");
 
 		scanf("%d", &input);
 		getchar();
@@ -1183,6 +1396,9 @@ void input_process(void) {
 			run_perf_tests();
 			break;
 		case 4:
+			replicate_with_server();
+			break;
+		case 5:
 			workqueue_shutdown(&workqueue);
 			exitloop = true;
 			break;
