@@ -1369,7 +1369,6 @@ void run_search_obtain_tests(void) {
 		printf("Elapsed time: %f\n", elapsedtime);
 #endif
 		totalelapsedtime += elapsedtime;
-		printf("DEL filename: %s\n", filename);
 		if (remove(filename) != 0) {
 			perror("File deletion failed for next iteration");
 			break;
