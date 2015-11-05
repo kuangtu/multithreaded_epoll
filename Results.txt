@@ -1,0 +1,660 @@
+One file takes
+Average Response time for REGISTER requests: 0.681678 ms
+
+Each node has 50 files of 1KB for Part 1 of experiment.
+Ping latency between nodes is 0.25ms avg.
+Ping latency from own network to aws node is 320ms.
+
+/******************************************************************************/
+Part 1:
+
+One node running
+Average Response time for REGISTER requests: 35.763644 ms
+
+Two nodes running
+Average Response time for REGISTER requests: 35.881726 ms
+Average Response time for REGISTER requests: 35.573335 ms
+
+Average: 35.727ms
+
+Three nodes running
+Average Response time for REGISTER requests: 36.332812 ms
+Average Response time for REGISTER requests: 35.998559 ms
+Average Response time for REGISTER requests: 36.084585 ms
+
+Average: 36.139ms
+
+Four nodes running
+Average Response time for REGISTER requests: 36.696132 ms
+Average Response time for REGISTER requests: 36.518340 ms
+Average Response time for REGISTER requests: 36.508110 ms
+Average Response time for REGISTER requests: 36.954235 ms
+
+Average: 36.669ms
+
+Five nodes running
+Average Response time for REGISTER requests: 36.924169 ms
+Average Response time for REGISTER requests: 36.791641 ms
+Average Response time for REGISTER requests: 36.642029 ms
+Average Response time for REGISTER requests: 36.988842 ms
+Average Response time for REGISTER requests: 37.623744 ms
+
+Average: 36.994ms
+
+Six nodes running
+Average Response time for REGISTER requests: 36.899654 ms
+Average Response time for REGISTER requests: 36.708810 ms
+Average Response time for REGISTER requests: 36.905360 ms
+Average Response time for REGISTER requests: 36.509462 ms
+Average Response time for REGISTER requests: 37.563216 ms
+Average Response time for REGISTER requests: 37.498693 ms
+
+Average: 37.014ms
+
+Seven nodes running
+Average Response time for REGISTER requests: 37.128728 ms
+Average Response time for REGISTER requests: 37.081235 ms
+Average Response time for REGISTER requests: 37.253577 ms
+Average Response time for REGISTER requests: 36.953361 ms
+Average Response time for REGISTER requests: 37.937345 ms
+Average Response time for REGISTER requests: 37.715598 ms
+Average Response time for REGISTER requests: 37.284586 ms
+
+Average: 37.336ms
+
+Eight nodes running
+Average Response time for REGISTER requests: 37.590774 ms
+Average Response time for REGISTER requests: 37.588433 ms
+Average Response time for REGISTER requests: 38.035092 ms
+Average Response time for REGISTER requests: 37.699429 ms
+Average Response time for REGISTER requests: 38.425190 ms
+Average Response time for REGISTER requests: 38.179202 ms
+Average Response time for REGISTER requests: 37.467241 ms
+Average Response time for REGISTER requests: 37.553659 ms
+
+Average: 37.817ms
+
+One node Running
+Average Response time for SEARCH requests: 0.372187 ms
+Average Response time for OBTAIN requests: 0.716536 ms
+
+Two node Running
+Average Response time for SEARCH requests: 0.363515 ms
+Average Response time for OBTAIN requests: 0.759210 ms
+
+Average Response time for SEARCH requests: 0.354566 ms
+Average Response time for OBTAIN requests: 0.753438 ms
+
+Average: 0.359ms
+Average: 0.756ms
+
+Three node running
+Average Response time for SEARCH requests: 0.391321 ms
+Average Response time for OBTAIN requests: 0.768585 ms
+
+Average Response time for SEARCH requests: 0.403539 ms
+Average Response time for OBTAIN requests: 0.740274 ms
+
+Average Response time for SEARCH requests: 0.389655 ms
+Average Response time for OBTAIN requests: 0.740458 ms
+
+Average: 0.395ms
+Average: 0.749ms
+
+Four node running
+Average Response time for SEARCH requests: 0.388647 ms
+Average Response time for OBTAIN requests: 0.769432 ms
+
+Average Response time for SEARCH requests: 0.413389 ms
+Average Response time for OBTAIN requests: 0.745787 ms
+
+Average Response time for SEARCH requests: 0.389686 ms
+Average Response time for OBTAIN requests: 0.722074 ms
+
+Average Response time for SEARCH requests: 0.381097 ms
+Average Response time for OBTAIN requests: 0.737325 ms
+
+Average: 0.393ms
+Average: 0.744ms
+
+Five node running
+Average Response time for SEARCH requests: 0.383812 ms
+Average Response time for OBTAIN requests: 0.754828 ms
+
+Average Response time for SEARCH requests: 0.408078 ms
+Average Response time for OBTAIN requests: 0.754416 ms
+
+Average Response time for SEARCH requests: 0.390575 ms
+Average Response time for OBTAIN requests: 0.735658 ms
+
+Average Response time for SEARCH requests: 0.363294 ms
+Average Response time for OBTAIN requests: 0.710270 ms
+
+Average Response time for SEARCH requests: 0.392272 ms
+Average Response time for OBTAIN requests: 0.738213 ms
+
+Average: 0.387ms
+Average: 0.738ms
+
+Six node running
+Average Response time for SEARCH requests: 0.384320 ms
+Average Response time for OBTAIN requests: 0.765596 ms
+
+Average Response time for SEARCH requests: 0.411055 ms
+Average Response time for OBTAIN requests: 0.773721 ms
+
+Average Response time for SEARCH requests: 0.388668 ms
+Average Response time for OBTAIN requests: 0.741626 ms
+
+Average Response time for SEARCH requests: 0.388366 ms
+Average Response time for OBTAIN requests: 0.728219 ms
+
+Average Response time for SEARCH requests: 0.404843 ms
+Average Response time for OBTAIN requests: 0.737280 ms
+
+Average Response time for SEARCH requests: 0.375947 ms
+Average Response time for OBTAIN requests: 0.727536 ms
+
+Average: 0.392ms
+Average: 0.745ms
+
+Seven node running
+Average Response time for SEARCH requests: 0.380198 ms
+Average Response time for OBTAIN requests: 0.758803 ms
+
+Average Response time for SEARCH requests: 0.407826 ms
+Average Response time for OBTAIN requests: 0.772505 ms
+
+Average Response time for SEARCH requests: 0.389532 ms
+Average Response time for OBTAIN requests: 0.753619 ms
+
+Average Response time for SEARCH requests: 0.389012 ms
+Average Response time for OBTAIN requests: 0.757057 ms
+
+Average Response time for SEARCH requests: 0.400853 ms
+Average Response time for OBTAIN requests: 0.757814 ms
+
+Average Response time for SEARCH requests: 0.375738 ms
+Average Response time for OBTAIN requests: 0.729398 ms
+
+Average Response time for SEARCH requests: 0.392628 ms
+Average Response time for OBTAIN requests: 0.740397 ms
+
+Average: 0.390ms
+Average: 0.752ms
+
+Eight node running
+Average Response time for SEARCH requests: 0.379017 ms
+Average Response time for OBTAIN requests: 0.756829 ms
+
+Average Response time for SEARCH requests: 0.402059 ms
+Average Response time for OBTAIN requests: 0.762612 ms
+
+Average Response time for SEARCH requests: 0.382296 ms
+Average Response time for OBTAIN requests: 0.740699 ms
+
+Average Response time for SEARCH requests: 0.388099 ms
+Average Response time for OBTAIN requests: 0.760915 ms
+
+Average Response time for SEARCH requests: 0.398775 ms
+Average Response time for OBTAIN requests: 0.757631 ms
+
+Average Response time for SEARCH requests: 0.369890 ms
+Average Response time for OBTAIN requests: 0.733360 ms
+
+Average Response time for SEARCH requests: 0.365538 ms
+Average Response time for OBTAIN requests: 0.760233 ms
+
+Average Response time for SEARCH requests: 0.379182 ms
+Average Response time for OBTAIN requests: 0.729201 ms
+
+Average: 0.383ms
+Average: 0.758ms
+
+/******************************************************************************/
+Part 2:
+
+1KB
+As above for 8 node running experiment
+
+10KB
+Average Response time for REGISTER requests: 37.383379 ms
+Average Response time for REGISTER requests: 37.099020 ms
+Average Response time for REGISTER requests: 37.153124 ms
+Average Response time for REGISTER requests: 37.181797 ms
+Average Response time for REGISTER requests: 37.500525 ms
+Average Response time for REGISTER requests: 37.086423 ms
+Average Response time for REGISTER requests: 36.991556 ms
+Average Response time for REGISTER requests: 37.615278 ms
+
+Average Response time for SEARCH requests: 0.407221 ms
+Average Response time for OBTAIN requests: 1.114662 ms
+
+Average Response time for SEARCH requests: 0.420655 ms
+Average Response time for OBTAIN requests: 1.118559 ms
+
+Average Response time for SEARCH requests: 0.405971 ms
+Average Response time for OBTAIN requests: 1.093040 ms
+
+Average Response time for SEARCH requests: 0.404336 ms
+Average Response time for OBTAIN requests: 1.121149 ms
+
+Average Response time for SEARCH requests: 0.417009 ms
+Average Response time for OBTAIN requests: 1.159717 ms
+
+Average Response time for SEARCH requests: 0.399098 ms
+Average Response time for OBTAIN requests: 1.148714 ms
+
+Average Response time for SEARCH requests: 0.382708 ms
+Average Response time for OBTAIN requests: 1.089950 ms
+
+Average Response time for SEARCH requests: 0.396733 ms
+Average Response time for OBTAIN requests: 1.084263 ms
+
+Average REGISTER: 37.251ms
+Average SEARCH:   0.404ms
+Average OBTAIN:   1.116ms
+
+100KB
+Average Response time for REGISTER requests: 38.986852 ms
+Average Response time for REGISTER requests: 38.977754 ms
+Average Response time for REGISTER requests: 39.196800 ms
+Average Response time for REGISTER requests: 38.600738 ms
+Average Response time for REGISTER requests: 39.693690 ms
+Average Response time for REGISTER requests: 39.112377 ms
+Average Response time for REGISTER requests: 38.607087 ms
+Average Response time for REGISTER requests: 39.264653 ms
+
+Average Response time for SEARCH requests: 0.381487 ms
+Average Response time for OBTAIN requests: 1.917066 ms
+
+Average Response time for SEARCH requests: 0.406232 ms
+Average Response time for OBTAIN requests: 1.934399 ms
+
+Average Response time for SEARCH requests: 0.396751 ms
+Average Response time for OBTAIN requests: 1.705269 ms
+
+Average Response time for SEARCH requests: 0.403072 ms
+Average Response time for OBTAIN requests: 1.932106 ms
+
+Average Response time for SEARCH requests: 0.408412 ms
+Average Response time for OBTAIN requests: 1.849466 ms
+
+Average Response time for SEARCH requests: 0.388934 ms
+Average Response time for OBTAIN requests: 2.017676 ms
+
+Average Response time for SEARCH requests: 0.386480 ms
+Average Response time for OBTAIN requests: 1.960569 ms
+
+Average Response time for SEARCH requests: 0.391429 ms
+Average Response time for OBTAIN requests: 1.842863 ms
+
+Average REGISTER: 39.055ms
+Average SEARCH:   0.395ms
+Average OBTAIN:   1.895ms
+
+1MB
+Average Response time for REGISTER requests: 37.736312 ms
+Average Response time for REGISTER requests: 37.864368 ms
+Average Response time for REGISTER requests: 37.803631 ms
+Average Response time for REGISTER requests: 37.847142 ms
+Average Response time for REGISTER requests: 38.357495 ms
+Average Response time for REGISTER requests: 37.618675 ms
+Average Response time for REGISTER requests: 37.664009 ms
+Average Response time for REGISTER requests: 38.349580 ms
+
+Average Response time for SEARCH requests: 0.378826 ms
+Average Response time for OBTAIN requests: 15.836008 ms
+
+Average Response time for SEARCH requests: 0.397883 ms
+Average Response time for OBTAIN requests: 15.737601 ms
+
+Average Response time for SEARCH requests: 0.393874 ms
+Average Response time for OBTAIN requests: 15.180276 ms
+
+Average Response time for SEARCH requests: 0.408822 ms
+Average Response time for OBTAIN requests: 15.513742 ms
+
+Average Response time for SEARCH requests: 0.401109 ms
+Average Response time for OBTAIN requests: 15.132450 ms
+
+Average Response time for SEARCH requests: 0.374998 ms
+Average Response time for OBTAIN requests: 15.532660 ms
+
+Average Response time for SEARCH requests: 0.460948 ms
+Average Response time for OBTAIN requests: 15.429691 ms
+
+Average REGISTER: 37.905
+Average SEARCH:   0.352ms
+Average OBTAIN:   13.545ms
+
+10MB
+Average Response time for REGISTER requests: 37.711402 ms
+Average Response time for REGISTER requests: 37.490721 ms
+Average Response time for REGISTER requests: 37.462117 ms
+Average Response time for REGISTER requests: 37.357060 ms
+Average Response time for REGISTER requests: 38.093888 ms
+Average Response time for REGISTER requests: 37.477061 ms
+Average Response time for REGISTER requests: 37.469538 ms
+Average Response time for REGISTER requests: 38.004435 ms
+
+Average Response time for SEARCH requests: 0.387253 ms
+Average Response time for OBTAIN requests: 145.511917 ms
+
+Average Response time for SEARCH requests: 0.408752 ms
+Average Response time for OBTAIN requests: 145.619118 ms
+
+Average Response time for SEARCH requests: 0.383045 ms
+Average Response time for OBTAIN requests: 145.169255 ms
+
+Average Response time for SEARCH requests: 0.399787 ms
+Average Response time for OBTAIN requests: 145.659107 ms
+
+Average Response time for SEARCH requests: 0.407401 ms
+Average Response time for OBTAIN requests: 145.388066 ms
+
+Average Response time for SEARCH requests: 0.397365 ms
+Average Response time for OBTAIN requests: 145.412307 ms
+
+Average Response time for SEARCH requests: 0.362055 ms
+Average Response time for OBTAIN requests: 145.557334 ms
+
+Average Response time for SEARCH requests: 0.422152 ms
+Average Response time for OBTAIN requests: 145.509767 ms
+
+Average REGISTER: 37.633ms
+Average SEARCH:   0.396ms
+Average OBTAIN:   145.479ms
+
+100MB
+Only 10 files were created and used here
+Average Response time for REGISTER requests: 7.552202 ms
+Average Response time for REGISTER requests: 7.520448 ms
+Average Response time for REGISTER requests: 7.660485 ms
+Average Response time for REGISTER requests: 7.567398 ms
+Average Response time for REGISTER requests: 7.680671 ms
+Average Response time for REGISTER requests: 7.572615 ms
+Average Response time for REGISTER requests: 7.576254 ms
+Average Response time for REGISTER requests: 7.657337 ms
+
+Average Response time for SEARCH requests: 0.345300 ms
+Average Response time for OBTAIN requests: 1415.700100 ms
+
+Average Response time for SEARCH requests: 0.381900 ms
+Average Response time for OBTAIN requests: 1458.017200 ms
+
+Average Response time for SEARCH requests: 0.422200 ms
+Average Response time for OBTAIN requests: 1445.933500 ms
+
+Average Response time for SEARCH requests: 0.398200 ms
+Average Response time for OBTAIN requests: 1456.955000 ms
+
+Average Response time for SEARCH requests: 0.443300 ms
+Average Response time for OBTAIN requests: 1450.757700 ms
+
+Average Response time for SEARCH requests: 0.445000 ms
+Average Response time for OBTAIN requests: 1447.997000 ms
+
+Average Response time for SEARCH requests: 0.409800 ms
+Average Response time for OBTAIN requests: 1456.543900 ms
+
+Average Response time for SEARCH requests: 0.464400 ms
+Average Response time for OBTAIN requests: 1429.153200 ms
+
+Average REGISTER:  7.598ms
+Average SEARCH:    0.414ms
+Average OBTAIN:    1445.1322ms
+
+1GB
+Only one file was created and used here
+Average Response time for REGISTER requests: 1.731000 ms
+Average Response time for REGISTER requests: 1.440000 ms
+Average Response time for REGISTER requests: 1.683000 ms
+Average Response time for REGISTER requests: 1.763000 ms
+Average Response time for REGISTER requests: 1.716000 ms
+Average Response time for REGISTER requests: 1.626000 ms
+Average Response time for REGISTER requests: 1.641000 ms
+Average Response time for REGISTER requests: 1.624000 ms
+
+Average Response time for SEARCH requests: 0.469000 ms
+Average Response time for OBTAIN requests: 14994.665000 ms
+
+Average Response time for SEARCH requests: 2.179000 ms
+Average Response time for OBTAIN requests: 14996.026000 ms
+
+Average Response time for SEARCH requests: 0.511000 ms
+Average Response time for OBTAIN requests: 15146.065000 ms
+
+Average Response time for SEARCH requests: 0.810000 ms
+Average Response time for OBTAIN requests: 15016.994000 ms
+
+Average Response time for SEARCH requests: 0.449000 ms
+Average Response time for OBTAIN requests: 14969.481000 ms
+
+Average Response time for SEARCH requests: 0.911000 ms
+Average Response time for OBTAIN requests: 14992.704000 ms
+
+Average Response time for SEARCH requests: 0.894000 ms
+Average Response time for OBTAIN requests: 14957.125000 ms
+
+Average Response time for SEARCH requests: 0.948000 ms
+Average Response time for OBTAIN requests: 14767.448000 ms
+
+Average REGISTER:  1.653ms
+Average SEARCH:    0.896ms
+Average OBTAIN:    14980.061ms
+
+/******************************************************************************/
+Part 3:
+
+Assignment1 Results:
+One node
+Average Response time for registration requests: 2.134458 ms
+Average Response time for client requests: 0.282686 ms
+Average Response time for client get requests: 0.241543 ms
+
+Two node
+Average Response time for registration requests: 4.593154 ms
+Average Response time for client requests: 1.265371 ms
+Average Response time for client get requests: 0.243978 ms
+
+Average Response time for registration requests: 4.313861 ms
+Average Response time for client requests: 2.036038 ms
+Average Response time for client get requests: 1.291262 ms
+
+Average REGISTER:  4.453ms
+Average SEARCH:    1.650ms
+Average OBTAIN:    0.767ms
+
+Three node
+Average Response time for registration requests: 5.490031 ms
+Average Response time for client requests: 1.832194 ms
+Average Response time for client get requests: 0.241364 ms
+
+Average Response time for registration requests: 6.318133 ms
+Average Response time for client requests: 2.122095 ms
+Average Response time for client get requests: 3.590589 ms
+
+Average Response time for registration requests: 5.577977 ms
+Average Response time for client requests: 2.172842 ms
+Average Response time for client get requests: 3.520567 ms
+
+Average REGISTER:  5.795ms
+Average SEARCH:    2.042ms
+Average OBTAIN:    2.450ms
+
+Four node
+Average Response time for registration requests: 7.889161 ms
+Average Response time for client requests: 2.265396 ms
+Average Response time for client get requests: 0.248037 ms
+
+Average Response time for registration requests: 8.678226 ms
+Average Response time for client requests: 3.102378 ms
+Average Response time for client get requests: 2.873563 ms
+
+Average Response time for registration requests: 9.291012 ms
+Average Response time for client requests: 3.496176 ms
+Average Response time for client get requests: 3.818971 ms
+
+Average Response time for registration requests: 8.904425 ms
+Average Response time for client requests: 3.649605 ms
+Average Response time for client get requests: 3.624527 ms
+
+Average REGISTER:  8.690ms
+Average SEARCH:    3.128ms
+Average OBTAIN:    2.461ms
+
+Five node
+Average Response time for registration requests: 9.715003 ms
+Average Response time for client requests: 3.070780 ms
+Average Response time for client get requests: 0.242066 ms
+
+Average Response time for registration requests: 10.844407 ms
+Average Response time for client requests: 3.669074 ms
+Average Response time for client get requests: 4.914866 ms
+
+Average Response time for registration requests: 11.809632 ms
+Average Response time for client requests: 4.204011 ms
+Average Response time for client get requests: 6.669500 ms
+
+Average Response time for registration requests: 10.976813 ms
+Average Response time for client requests: 4.542486 ms
+Average Response time for client get requests: 6.694120 ms
+
+Average Response time for registration requests: 10.120605 ms
+Average Response time for client requests: 4.384440 ms
+Average Response time for client get requests: 6.691596 ms
+
+Average REGISTER:  10.693ms
+Average SEARCH:    3.974ms
+Average OBTAIN:    5.042ms
+
+Six node
+Average Response time for registration requests: 11.622262 ms
+Average Response time for client requests: 3.608090 ms
+Average Response time for client get requests: 0.249132 ms
+
+Average Response time for registration requests: 12.681863 ms
+Average Response time for client requests: 4.528920 ms
+Average Response time for client get requests: 5.729324 ms
+
+Average Response time for registration requests: 12.932714 ms
+Average Response time for client requests: 5.010844 ms
+Average Response time for client get requests: 5.913390 ms
+
+Average Response time for registration requests: 14.040963 ms
+Average Response time for client requests: 5.780127 ms
+Average Response time for client get requests: 5.257313 ms
+
+Average Response time for registration requests: 12.860294 ms
+Average Response time for client requests: 5.649190 ms
+Average Response time for client get requests: 5.241656 ms
+
+Average Response time for registration requests: 13.474683 ms
+Average Response time for client requests: 5.606081 ms
+Average Response time for client get requests: 5.190042 ms
+
+Average REGISTER:  12.935ms
+Average SEARCH:    5.030ms
+Average OBTAIN:    5.466ms
+
+Seven node
+Average Response time for registration requests: 15.943638 ms
+Average Response time for client requests: 3.682801 ms
+Average Response time for client get requests: 0.246728 ms
+
+Average Response time for registration requests: 15.704077 ms
+Average Response time for client requests: 5.009531 ms
+Average Response time for client get requests: 7.293237 ms
+
+Average Response time for registration requests: 15.994502 ms
+Average Response time for client requests: 6.112492 ms
+Average Response time for client get requests: 7.936312 ms
+
+Average Response time for registration requests: 15.091485 ms
+Average Response time for client requests: 7.297441 ms
+Average Response time for client get requests: 7.019953 ms
+
+Average Response time for registration requests: 17.259512 ms
+Average Response time for client requests: 7.304505 ms
+Average Response time for client get requests: 6.886389 ms
+
+Average Response time for registration requests: 14.605416 ms
+Average Response time for client requests: 7.232905 ms
+Average Response time for client get requests: 6.856283 ms
+
+Average Response time for registration requests: 14.602890 ms
+Average Response time for client requests: 7.178065 ms
+Average Response time for client get requests: 6.809358 ms
+
+Average REGISTER: 15.600ms
+Average SEARCH:   6.259ms
+Average OBTAIN:   6.150ms
+
+Eight node
+Average Response time for registration requests: 14.115728 ms
+Average Response time for client requests: 5.057127 ms
+Average Response time for client get requests: 0.245067 ms
+
+Average Response time for registration requests: 17.497232 ms
+Average Response time for client requests: 7.394720 ms
+Average Response time for client get requests: 10.707463 ms
+
+Average Response time for registration requests: 19.118842 ms
+Average Response time for client requests: 9.434332 ms
+Average Response time for client get requests: 11.359169 ms
+
+Average Response time for registration requests: 18.103775 ms
+Average Response time for client requests: 9.541508 ms
+Average Response time for client get requests: 11.160199 ms
+
+Average Response time for registration requests: 16.310991 ms
+Average Response time for client requests: 10.319491 ms
+Average Response time for client get requests: 10.783012 ms
+
+Average Response time for registration requests: 16.519909 ms
+Average Response time for client requests: 10.289639 ms
+Average Response time for client get requests: 10.772894 ms
+
+Average Response time for registration requests: 15.735753 ms
+Average Response time for client requests: 10.244290 ms
+Average Response time for client get requests: 10.765751 ms
+
+Average Response time for registration requests: 17.194833 ms
+Average Response time for client requests: 10.197773 ms
+Average Response time for client get requests: 9.490033 ms
+
+Average REGISTER:  16.825ms
+Average SEARCH:    9.060ms
+Average OBTAIN:    9.410ms
+
+/******************************************************************************/
+
+Results of Disk IO with bonnie++:
+
+ubuntu@ip-172-31-4-123:~/shared$ bonnie++ -d /tmp -r 16G -u ubuntu
+Using uid:1000, gid:1000.
+Writing a byte at a time...done
+Writing intelligently...done
+Rewriting...done
+Reading a byte at a time...done
+Reading intelligently...done
+start 'em...done...done...done...done...done...
+Create files in sequential order...done.
+Stat files in sequential order...done.
+Delete files in sequential order...done.
+Create files in random order...done.
+Stat files in random order...done.
+Delete files in random order...done.
+Version  1.97       ------Sequential Output------ --Sequential Input- --Random-
+Concurrency   1     -Per Chr- --Block-- -Rewrite- -Per Chr- --Block-- --Seeks--
+Machine        Size K/sec %CP K/sec %CP K/sec %CP K/sec %CP K/sec %CP  /sec %CP
+ip-172-31-4-12 300M   840  99 119251   9 91722   4  5440  99 +++++ +++ +++++ +++
+Latency              9626us      36us      30us    1514us      21us    3492us
+Version  1.97       ------Sequential Create------ --------Random Create--------
+ip-172-31-4-123     -Create-- --Read--- -Delete-- -Create-- --Read--- -Delete--
+              files  /sec %CP  /sec %CP  /sec %CP  /sec %CP  /sec %CP  /sec %CP
+                 16 +++++ +++ +++++ +++ +++++ +++ +++++ +++ +++++ +++ +++++ +++
+Latency               492us     272us     287us      61us      11us      39us
+1.97,1.97,ip-172-31-4-123,1,1446711241,300M,,840,99,119251,9,91722,4,5440,99,+++++,+++,+++++,+++,16,,,,,+++++,+++,+++++,+++,+++++,+++,+++++,+++,+++++,+++,+++++,+++,9626us,36us,30us,1514us,21us,3492us,492us,272us,287us,61us,11us,39us
+
