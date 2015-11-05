@@ -1,0 +1,68 @@
+Make Output:
+make clean; make dht
+rm *.o
+gcc -g -w   -c -o workqueue.o workqueue.c
+gcc -g -w   -c -o error.o error.c
+gcc -g -w   -c -o common.o common.c
+gcc -g -w   -c -o dht.o dht.c
+gcc -g -w -lpthread workqueue.o error.o dht.o common.o -odht
+
+/******************************************************************************/
+For Register operation:
+Assignment3_Sanchayan|file-replication⚡ ⇒ ./dht 1 server.conf shared1/ 127.0.0.1
+
+Select Operation
+(1) Register (2) Get file
+(3) Run Register tests (4) Run search and obtain tests
+(5) Replicate (6) Exit
+Please enter your selection (1-6)	1
+
+Put operation successful
+
+Put operation successful
+
+Select Operation
+(1) Register (2) Get file
+(3) Run Register tests (4) Run search and obtain tests
+(5) Replicate (6) Exit
+Please enter your selection (1-6)	
+/******************************************************************************/
+On connection accept from another peer
+Select Operation
+(1) Register (2) Get file
+(3) Run Register tests (4) Run search and obtain tests
+(5) Replicate (6) Exit
+Please enter your selection (1-6)	Connection accepted
+Connection accepted
+Connection accepted
+/*****************************************************************************/
+Get File:
+Select Operation
+(1) Register (2) Get file
+(3) Run Register tests (4) Run search and obtain tests
+(5) Replicate (6) Exit
+Please enter your selection (1-6)	2
+Enter file name: 	sample11.txt
+
+
+Get operation successful
+Available Peers: 1
+Peer 0: 127.0.0.1 50001
+
+Enter the number of peer you want to connect to: 	0
+File transfer complete
+
+Select Operation
+(1) Register (2) Get file
+(3) Run Register tests (4) Run search and obtain tests
+(5) Replicate (6) Exit
+Please enter your selection (1-6)	2
+Enter file name: 	blahblah.txt                 <---------File was not present with any node
+
+
+Get operation failed
+/****************************************************************************/
+
+Note that replication and tests operation have been explained in the manual.
+Please refer the same. They also have the output prints. No provision is
+given to display file contents during or after file download.
